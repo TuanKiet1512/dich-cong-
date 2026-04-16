@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trình Dịch Công Thức Kiệt Xinh Chai</title>
+    
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            options: {
+                enableAssistiveMml: true 
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #f0f2f5; 
+            margin: 0; padding: 20px; 
+            display: flex; flex-direction: column; align-items: center; 
+        }
+        h2 { color: #333; margin-bottom: 5px; text-align: center; }
+        p.note { color: #555; margin-bottom: 20px; font-size: 14px; }
+        .container { 
+            display: flex; width: 100%; max-width: 1300px; 
+            gap: 20px; justify-content: center; 
+        }
+        .box { 
+            flex: 1; background: #fff; padding: 20px; 
+            border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            display: flex; flex-direction: column; 
+        }
+        .box h3 { margin-top: 0; color: #0056b3; font-size: 18px; }
+        textarea { 
+            width: 100%; height: 500px; padding: 15px; 
+            font-size: 16px; border: 1px solid #ccc; 
+            border-radius: 5px; resize: none; font-family: monospace;
+            line-height: 1.5;
+        }
+        textarea:focus { outline: none; border-color: #0056b3; }
+        
+        #outputText {
+            width: 100%; height: 500px; padding: 15px; 
+            font-size: 18px; border: 1px solid #28a745; 
+            border-radius: 5px; background-color: #f8fff9;
+            overflow-y: auto; 
+            font-family: 'Times New Roman', Times, serif; 
+            line-height: 1.6;
+            transition: background-color 0.3s;
+        }
+
+        /* KHẮC PHỤC LỖI BÔI ĐEN BỊ ĐỨT QUÃNG */
+        #outputText *::selection { background-color: #b3d4fc; }
+        mjx-container, mjx-container * {
+            user-select: text !important;
+            -webkit-user-select: text !important;
+            -moz-user-select: text !important;
+        }
+        mjx-assistive-mml, mjx-assistive-mml * {
+            user-select: none !important; /* Ẩn mã ngầm để bôi đen mượt hơn */
+        }
+
+        .btn-group { margin-top: 15px; display: flex; justify-content: space-between; }
+        button { 
+            padding: 12px 24px; font-size: 16px; cursor: pointer; 
+            background-color: #007bff; color: white; font-weight: bold;
+            border: none; border-radius: 5px; transition: background 0.3s; 
+        }
+        button:hover { background-color: #0056b3; }
+        button.copy-btn { background-color: #28a745; }
+        button.copy-btn:hover { background-color: #218838; }
+    </style>
+</head>
+<body>
+
+    <h2>🔄 Công Cụ Dịch Công Thức của bé Huyền xinh đẹp 🩵</h2>
+    <!-- <p class="note"><i>Hỗ trợ: Bôi đen một đoạn bất kỳ bên phải -> Bấm <b>Ctrl + C</b> để copy sang Word.</i></p> -->
+    
+    <div class="container">
+        <div class="box">
+            <h3>Nhập đoạn mã lỗi vào đây</h3>
+            <textarea id="inputText" placeholder="Đoạn mã cần dịch..."></textarea>
+            <div class="btn-group">
+                <button onclick="clearText()" style="background-color: #dc3545;"> Xóa </button>
+                <button onclick="processText()">Dịch .... </button>
+            </div>
+        </div>
+
+        <div class="box">
+            <h3>Kết quả</h3>
+            <div id="outputText">Kết quả...</div>
+            <div class="btn-group" style="justify-content: flex-end;">
+                <button class="copy-btn" onclick="copyToClipboard()"> Copy Toàn Bộ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function processText() {
+            let text = document.getElementById("inputText").value;
+            if (text.trim() === "") {
+                alert("Vui lòng nhập văn bản vào ô bên trái!");
+                return;
+            }
+
+            text = text.replace(/[\u200B-\u200D\uFEFF]/g, ''); 
+            text = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            text = text.replace(/\n/g, '<br>');
+
+            let outputDiv = document.getElementById("outputText");
+            outputDiv.innerHTML = text; 
+
+            MathJax.typesetClear([outputDiv]);
+            MathJax.typesetPromise([outputDiv]);
+        }
+
+        // BẮT SỰ KIỆN COPY KHI NGƯỜI DÙNG BÔI ĐEN BẤT KỲ ĐOẠN NÀO
+        document.getElementById("outputText").addEventListener("copy", function(event) {
+            let selection = window.getSelection();
+            if (!selection.rangeCount || selection.isCollapsed) return;
+
+            let originalRange = selection.getRangeAt(0);
+            let range = originalRange.cloneRange(); 
+
+            // Thuật toán quét và chống "cắt ngang" công thức
+            function getClosestMjx(node) {
+                if (!node) return null;
+                if (node.nodeType === 1 && node.tagName.toLowerCase() === 'mjx-container') return node;
+                return node.parentElement ? node.parentElement.closest('mjx-container') : null;
+            }
+
+            let startMjx = getClosestMjx(range.startContainer);
+            if (startMjx) { try { range.setStartBefore(startMjx); } catch(e){} }
+
+            let endMjx = getClosestMjx(range.endContainer);
+            if (endMjx) { try { range.setEndAfter(endMjx); } catch(e){} }
+
+            let tempDiv = document.createElement("div");
+            tempDiv.appendChild(range.cloneContents());
+
+            // Đổi mã HTML thành Equation cho Word
+            let containers = tempDiv.querySelectorAll('mjx-container');
+            containers.forEach(container => {
+                let mathElement = container.querySelector('mjx-assistive-mml math');
+                if (mathElement) {
+                    mathElement.setAttribute('xmlns', 'http://www.w3.org/1998/Math/MathML');
+                    if (container.hasAttribute('display')) {
+                        mathElement.setAttribute('display', 'block');
+                    }
+                    container.parentNode.replaceChild(mathElement, container);
+                }
+            });
+
+            tempDiv.querySelectorAll('mjx-assistive-mml').forEach(el => el.remove());
+
+            let wrapper = document.createElement("div");
+            wrapper.style.fontFamily = "'Times New Roman', Times, serif"; 
+            wrapper.style.fontSize = "14pt";
+            wrapper.appendChild(tempDiv);
+
+            event.clipboardData.setData("text/html", wrapper.innerHTML);
+            event.clipboardData.setData("text/plain", wrapper.innerText);
+            
+            event.preventDefault(); 
+
+            // Hiệu ứng chớp nền báo hiệu Copy thành công
+            let outbox = document.getElementById("outputText");
+            outbox.style.backgroundColor = "#d4edda";
+            setTimeout(() => { outbox.style.backgroundColor = "#f8fff9"; }, 300);
+        });
+
+        function copyToClipboard() {
+            let outputDiv = document.getElementById("outputText");
+            if (outputDiv.innerText.trim() === "Kết quả...") return;
+            
+            let range = document.createRange();
+            range.selectNodeContents(outputDiv);
+            let selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+
+            try {
+                document.execCommand('copy');
+                alert("✅ Đã copy TOÀN BỘ thành công! ");
+            } catch (err) {
+                alert("❌ Trình duyệt không hỗ trợ nút copy này.");
+            }
+            selection.removeAllRanges();
+        }
+
+        function clearText() {
+            document.getElementById("inputText").value = "";
+            document.getElementById("outputText").innerHTML = "Kết quả...";
+            document.getElementById("outputText").style.backgroundColor = "#f8fff9";
+            document.getElementById("inputText").focus();
+        }
+    </script>
+</body>
+</html>
